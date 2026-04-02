@@ -1,0 +1,18 @@
+{
+	"name": "pi-plan-mode",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "Structured planning mode for pi.dev with file-backed plans and execution tracking",
+	"keywords": ["pi-package"],
+	"license": "MIT",
+	"pi": {
+		"extensions": ["./extensions/index.ts"]
+	},
+	"peerDependencies": {
+		"@mariozechner/pi-ai": "*",
+		"@mariozechner/pi-agent-core": "*",
+		"@mariozechner/pi-coding-agent": "*",
+		"@mariozechner/pi-tui": "*",
+		"@sinclair/typebox": "*"
+	}
+}

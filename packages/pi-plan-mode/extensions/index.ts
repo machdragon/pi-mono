@@ -102,13 +102,19 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		}
 	}
 
-	function enterPlanMode(ctx: ExtensionContext, variant: PlanVariant, name?: string): void {
+	function enterPlanMode(ctx: ExtensionContext, variant: PlanVariant, name?: string, task?: string): void {
 		const planFilePath = createPlanFile(ctx.cwd, name);
 		applyTransition({ type: "enter", variant, planFilePath });
 		applyToolRestrictions();
 		updateStatus(ctx);
 		persistState();
 		ctx.ui.notify(`Plan mode enabled. Plan file: ${planFilePath}`);
+		if (task) {
+			pi.sendMessage(
+				{ customType: "plan-mode-start", content: task, display: true },
+				{ triggerTurn: true },
+			);
+		}
 	}
 
 	function exitPlanMode(ctx: ExtensionContext): void {
@@ -192,15 +198,15 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 						ctx.ui.notify("Already in plan mode. Use /plan exit first.", "warning");
 						return;
 					}
-					const name = parts.slice(1).join("-") || undefined;
-					enterPlanMode(ctx, "long", name);
+					const task = parts.slice(1).join(" ") || undefined;
+					enterPlanMode(ctx, "long", task, task);
 					return;
 				}
 
 				default: {
 					if (state.phase === "idle") {
-						const name = args.trim() || undefined;
-						enterPlanMode(ctx, "standard", name);
+						const task = args.trim() || undefined;
+						enterPlanMode(ctx, "standard", task, task);
 					} else {
 						exitPlanMode(ctx);
 					}

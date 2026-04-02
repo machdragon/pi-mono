@@ -18,10 +18,13 @@ You are in plan mode. You MUST NOT make any edits except to the plan file.
 ## Plan File
 ${planExists ? `A plan file exists at ${planFilePath}. Read it and update it using the write tool.` : `No plan file yet. Create your plan at ${planFilePath} using the write tool.`}
 
-## CRITICAL: How to output your plan
-- Use the write tool to save the plan to the file above. Do NOT write the plan as chat text.
-- Chat responses should be brief exploration notes only (e.g. "Reading X to understand Y...").
-- The plan lives in the file, not in your response.`;
+## CRITICAL: The plan file must be self-contained
+The plan file is the source of truth. When execution starts, the agent may be given ONLY the plan file and a fresh context — no chat history, no memory of this conversation.
+
+This means:
+- Every fact the executing agent needs must be in the file: exact file paths, function names, what to change, why, and how to verify.
+- Do not rely on "as discussed" or implicit shared context.
+- Write the plan to the file using the write tool. You may also describe it in chat — that is fine — but the file must contain everything needed to execute without this conversation.`;
 
 	if (variant === "long") {
 		return `${restrictions}

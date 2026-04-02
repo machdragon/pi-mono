@@ -339,15 +339,15 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 
 		if (choice === "Execute the plan") {
 			// Exit plan mode entirely — agent executes with full tool access
+			const planContent = state.planFilePath ? readPlanFile(state.planFilePath) : null;
 			applyTransition({ type: "exit" });
 			applyToolRestrictions();
 			updateStatus(ctx);
 			persistState();
 
-			const execMessage =
-				state.todoItems.length > 0
-					? `Execute the plan at ${state.planFilePath}. Start with: ${state.todoItems[0].text}`
-					: `Execute the plan at ${state.planFilePath}.`;
+			const execMessage = planContent
+				? `Execute the following plan:\n\n${planContent}`
+				: `Execute the plan at ${state.planFilePath}.`;
 			pi.sendMessage(
 				{ customType: "plan-mode-execute", content: execMessage, display: true },
 				{ triggerTurn: true },

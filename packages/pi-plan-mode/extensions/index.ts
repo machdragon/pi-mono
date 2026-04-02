@@ -14,12 +14,10 @@
  * - Session persistence for resume
  */
 
-import { homedir } from "node:os";
-import { isAbsolute, resolve } from "node:path";
-
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage, TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { resolveToCwd } from "@mariozechner/pi-coding-agent";
 import { Key } from "@mariozechner/pi-tui";
 
 import { extractTodoItems, isSafeCommand, markCompletedSteps } from "./guards.js";
@@ -229,7 +227,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		if (state.phase !== "planning" && state.phase !== "review") return;
 
 		if (event.toolName === "write" || event.toolName === "edit") {
-			const rawPath = (event.input.path ?? event.input.file_path) as string | undefined;
+			const rawPath = event.input.path as string | undefined;
 			if (!rawPath || !state.planFilePath) {
 				return {
 					block: true,
@@ -237,8 +235,7 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 				};
 			}
 			// Resolve ~ and relative paths before comparing
-			const expanded = rawPath.startsWith("~") ? rawPath.replace("~", homedir()) : rawPath;
-			const resolved = isAbsolute(expanded) ? expanded : resolve(ctx.cwd, expanded);
+			const resolved = resolveToCwd(rawPath, ctx.cwd);
 			if (resolved !== state.planFilePath) {
 				return {
 					block: true,

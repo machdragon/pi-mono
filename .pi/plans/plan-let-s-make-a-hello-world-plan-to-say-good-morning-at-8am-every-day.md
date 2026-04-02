@@ -1,43 +1,56 @@
-Plan for a minimal “say good morning at 8am every day” feature:
+Plan:
 
-1. Define the behavior
-   - Trigger once per day at 8:00 AM local time
-   - Output: `Good morning`
-   - Decide where it appears:
-     - terminal/TUI message
-     - notification
-     - chat/agent message
-     - web UI
+1. Define the target behavior
+   - At 8:00 AM every day, emit a simple `Hello world` / `Good morning` message.
+   - Decide where it should appear:
+     - terminal output
+     - TUI notification
+     - desktop/system notification
+     - chat message / webhook
 
-2. Pick the target package
-   - `packages/mom` if this is a scheduled/reminder-style feature
-   - `packages/agent` or `packages/coding-agent` if the agent should emit it
-   - `packages/tui` or `packages/web-ui` if it needs visible UI delivery
+2. Choose the scheduling mechanism
+   - In-app scheduler if this should run while the app is open
+   - OS scheduler if this should run independently
+     - cron on Linux/macOS
+     - launchd on macOS
+     - Task Scheduler on Windows
 
-3. Implement a minimal scheduler
-   - Add a recurring daily schedule
-   - Respect local timezone
-   - Prevent duplicate firing if the app restarts around 8:00 AM
+3. Implement a minimal hello-world version
+   - Create a small function:
+     - get current local time
+     - produce `"Good morning"`
+     - send/output it to the selected destination
 
-4. Add the hello-world action
-   - On trigger, emit a simple message: `Good morning`
-   - Keep the first version hardcoded
+4. Add daily scheduling
+   - Trigger at local 08:00
+   - Prevent duplicate sends on restart if needed
+   - Handle timezone explicitly
 
 5. Add configuration
-   - Default time: `08:00`
-   - Default text: `Good morning`
-   - Optional future config:
-     - timezone
-     - weekdays only
-     - custom message
+   - message text
+   - schedule time, default `08:00`
+   - timezone, if needed
+   - enable/disable flag
 
-6. Add tests
-   - Schedules next run correctly before and after 8:00 AM
-   - Fires once per day
-   - Handles timezone/local clock correctly
+6. Add basic validation
+   - log when the job is scheduled
+   - log when the message is sent
+   - verify behavior around app restart and missed runs
 
-7. Validate
-   - Run `npm run check`
-   - If tests are added, run only the specific test file from the package root
+7. Optional follow-ups
+   - weekdays only
+   - different messages by day
+   - user-configurable reminder channel
 
-If you want, I can turn this into an actual implementation plan for a specific package. Most likely candidate is `packages/mom`.
+Minimal hello-world scope:
+- hardcoded message: `Good morning`
+- hardcoded time: `08:00`
+- local timezone
+- log to console first
+
+If you want, I can turn this into an implementation plan for a specific package in this repo. If so, tell me which module:
+- `packages/agent`
+- `packages/coding-agent`
+- `packages/tui`
+- `packages/web-ui`
+- something else

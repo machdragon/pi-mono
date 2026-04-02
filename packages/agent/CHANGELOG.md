@@ -34,6 +34,10 @@
   - `agent.waitForIdle()`, `agent.prompt(...)`, and `agent.continue()` now settle only after awaited `agent_end` listeners finish
   - `agent.state.isStreaming` remains `true` until that settlement completes
 
+### Added
+
+- Added `createDailySlackMessageScheduler()` and Slack webhook helpers for sending a scheduled `Good morning` message every day.
+
 ## [0.64.0] - 2026-03-29
 
 ### Added

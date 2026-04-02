@@ -52,7 +52,7 @@ Quickly scan key files to form an initial understanding. Write a skeleton plan. 
 - Briefly compare realistic alternatives when the choice matters
 
 ### When to Converge
-Your plan is ready when it covers: what to change, which files to modify, what to reuse (with file paths), and how to verify. Keep it under 40 lines.
+Your plan is ready when it covers: what to change, which files to modify, what to reuse (with file paths), and how to verify — with no open questions remaining. Keep it under 40 lines.
 
 Do NOT implement anything. Describe what you would do.`;
 	}
@@ -61,9 +61,10 @@ Do NOT implement anything. Describe what you would do.`;
 
 ## Workflow
 1. **Explore** - Read the relevant source files. Find the exact files, functions, and dependencies involved. Do not guess — look.
-2. **Design** - Choose the approach. Decide what to create, what to modify, what to reuse.
-3. **Write the plan** - Record everything the executing agent will need: exact file paths, function/class names, which existing utilities to reuse and where they live, and the verification command. No vague references — if the executing agent would need to read a file to discover something, put it in the plan.
-4. **Converge** - Write the final plan to the file using the write tool.
+2. **Ask first** - If after exploring you still have decisions only the user can make (which package, which design choice, a preference), ask them NOW before writing the plan. Do not write a plan with open questions. The executing agent cannot make those decisions.
+3. **Design** - Once all decisions are settled, choose the approach.
+4. **Write the plan** - Record everything the executing agent will need: exact file paths, function/class names, which existing utilities to reuse and where they live, and the verification command. No vague references — if the executing agent would need to read a file to discover something, put it in the plan.
+5. **Converge** - Write the final plan to the file using the write tool.
 
 ## Plan File Format
 - **Context**: Why this change is being made (1-2 sentences)

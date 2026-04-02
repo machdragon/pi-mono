@@ -399,6 +399,29 @@ execute: async (toolCallId, params, signal, onUpdate) => {
 
 Thrown errors are caught by the agent and reported to the LLM as tool errors with `isError: true`.
 
+## Daily Slack Scheduler
+
+Use `createDailySlackMessageScheduler()` to post a simple message to a Slack incoming webhook at a fixed local time each day.
+
+```typescript
+import { createDailySlackMessageScheduler } from "@mariozechner/pi-agent-core";
+
+const scheduler = createDailySlackMessageScheduler({
+  webhookUrl: process.env.SLACK_WEBHOOK_URL!,
+  message: "Good morning",
+  scheduleTime: "08:00",
+  timeZone: "America/New_York", // optional, defaults to the local system time zone
+});
+
+scheduler.start();
+```
+
+The scheduler:
+- posts `{ text: "..." }` to a Slack incoming webhook
+- defaults to `Good morning` at `08:00`
+- logs when the next run is scheduled and when a message is sent
+- exposes `sendNow()`, `stop()`, and `getStatus()` for manual control
+
 ## Proxy Usage
 
 For browser apps that proxy through a backend:

@@ -21,7 +21,7 @@ import { resolveToCwd } from "@mariozechner/pi-coding-agent";
 import { Key } from "@mariozechner/pi-tui";
 
 import { extractTodoItems, isSafeCommand, markCompletedSteps } from "./guards.js";
-import { createPlanFile, planFileExists, readPlanFile } from "./plan-file.js";
+import { createPlanFile, isPlanFileTemplate, planFileExists, readPlanFile, writePlanFile } from "./plan-file.js";
 import { getPlanningPrompt } from "./prompts.js";
 import {
 	createInitialState,
@@ -308,7 +308,22 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		if (state.phase !== "planning" || !ctx.hasUI) return;
 
 		if (state.planFilePath) {
-			const content = readPlanFile(state.planFilePath);
+			let content = readPlanFile(state.planFilePath);
+
+			// If the model didn't write to the file, auto-save from the last assistant message
+			if (!content || isPlanFileTemplate(content)) {
+				const lastAssistant = [...event.messages]
+					.reverse()
+					.find((m): m is AssistantMessage => isAssistantMessage(m));
+				if (lastAssistant) {
+					const text = getTextContent(lastAssistant);
+					if (text.trim()) {
+						writePlanFile(state.planFilePath, text.trim());
+						content = text.trim();
+					}
+				}
+			}
+
 			if (content) {
 				const extracted = extractTodoItems(content);
 				if (extracted.length > 0) {

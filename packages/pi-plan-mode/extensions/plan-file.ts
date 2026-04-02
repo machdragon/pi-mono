@@ -49,6 +49,15 @@ export function readPlanFile(filePath: string): string | null {
 	}
 }
 
+export function writePlanFile(filePath: string, content: string): void {
+	writeFileSync(filePath, content, "utf-8");
+}
+
+/** Returns true if the file still contains only the blank template (no real content). */
+export function isPlanFileTemplate(content: string): boolean {
+	return content.includes("<!-- Why this change") || content.includes("<!-- Recommended implementation");
+}
+
 export function planFileExists(filePath: string): boolean {
 	return existsSync(filePath);
 }

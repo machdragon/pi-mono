@@ -22,7 +22,7 @@ import { Key } from "@mariozechner/pi-tui";
 
 import { extractTodoItems, isSafeCommand, markCompletedSteps } from "./guards.js";
 import { createPlanFile, planFileExists, readPlanFile } from "./plan-file.js";
-import { getExecutionPrompt, getPlanningPrompt } from "./prompts.js";
+import { getPlanningPrompt } from "./prompts.js";
 import {
 	createInitialState,
 	deserializeState,
@@ -300,50 +300,10 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 			};
 		}
 
-		if (state.phase === "executing" && state.todoItems.length > 0) {
-			const prompt = getExecutionPrompt(state.todoItems);
-			if (prompt) {
-				return {
-					message: {
-						customType: "plan-execution-context",
-						content: prompt,
-						display: false,
-					},
-				};
-			}
-		}
 	});
 
-	// Track [DONE:n] progress during execution
-	pi.on("turn_end", async (event, ctx) => {
-		if (state.phase !== "executing" || state.todoItems.length === 0) return;
-		if (!isAssistantMessage(event.message)) return;
-
-		const text = getTextContent(event.message);
-		if (markCompletedSteps(text, state.todoItems) > 0) {
-			updateStatus(ctx);
-		}
-		persistState();
-	});
-
-	// Handle plan completion and review flow
+	// Handle plan review flow
 	pi.on("agent_end", async (event, ctx) => {
-		// Check if execution is complete
-		if (state.phase === "executing" && state.todoItems.length > 0) {
-			if (state.todoItems.every((t) => t.completed)) {
-				const completedList = state.todoItems.map((t) => `~~${t.text}~~`).join("\n");
-				pi.sendMessage(
-					{ customType: "plan-complete", content: `**Plan Complete!**\n\n${completedList}`, display: true },
-					{ triggerTurn: false },
-				);
-				applyTransition({ type: "finish" });
-				applyToolRestrictions();
-				updateStatus(ctx);
-				persistState();
-			}
-			return;
-		}
-
 		// In planning phase: read plan file, extract todos, prompt for review
 		if (state.phase !== "planning" || !ctx.hasUI) return;
 
@@ -373,36 +333,27 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 		}
 
 		const choice = await ctx.ui.select("Plan mode - what next?", [
-			state.todoItems.length > 0 ? "Execute the plan (track progress)" : "Execute the plan",
+			"Execute the plan",
 			"Refine the plan",
-			"Stay in plan mode",
 		]);
 
-		if (choice?.startsWith("Execute")) {
-			applyTransition({ type: "execute" });
+		if (choice === "Execute the plan") {
+			// Exit plan mode entirely — agent executes with full tool access
+			applyTransition({ type: "exit" });
 			applyToolRestrictions();
 			updateStatus(ctx);
 			persistState();
 
 			const execMessage =
 				state.todoItems.length > 0
-					? `Execute the plan. Start with: ${state.todoItems[0].text}`
-					: "Execute the plan you just created.";
+					? `Execute the plan at ${state.planFilePath}. Start with: ${state.todoItems[0].text}`
+					: `Execute the plan at ${state.planFilePath}.`;
 			pi.sendMessage(
 				{ customType: "plan-mode-execute", content: execMessage, display: true },
 				{ triggerTurn: true },
 			);
-		} else if (choice === "Refine the plan") {
-			applyTransition({ type: "refine" });
-			updateStatus(ctx);
-			persistState();
-
-			const refinement = await ctx.ui.editor("Refine the plan:", "");
-			if (refinement?.trim()) {
-				pi.sendUserMessage(refinement.trim());
-			}
 		} else {
-			// Stay in plan mode (revert from review to planning)
+			// Refine or escape — stay in planning mode
 			applyTransition({ type: "refine" });
 			updateStatus(ctx);
 			persistState();

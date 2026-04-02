@@ -16,7 +16,12 @@ You are in plan mode. You MUST NOT make any edits except to the plan file.
 - Use the ABSOLUTE path when writing/editing the plan file
 
 ## Plan File
-${planExists ? `A plan file exists at ${planFilePath}. Read it and update incrementally.` : `No plan file yet. Create your plan at ${planFilePath}.`}`;
+${planExists ? `A plan file exists at ${planFilePath}. Read it and update it using the write tool.` : `No plan file yet. Create your plan at ${planFilePath} using the write tool.`}
+
+## CRITICAL: How to output your plan
+- Use the write tool to save the plan to the file above. Do NOT write the plan as chat text.
+- Chat responses should be brief exploration notes only (e.g. "Reading X to understand Y...").
+- The plan lives in the file, not in your response.`;
 
 	if (variant === "long") {
 		return `${restrictions}

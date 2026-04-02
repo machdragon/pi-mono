@@ -4,6 +4,7 @@ import { join, resolve } from "path";
 import { type AgentRunner, getOrCreateRunner } from "./agent.js";
 import { downloadChannel } from "./download.js";
 import { createEventsWatcher } from "./events.js";
+import { createGoodMorningScheduler, resolveGoodMorningConfig } from "./good-morning.js";
 import * as log from "./log.js";
 import { parseSandboxArg, type SandboxConfig, validateSandbox } from "./sandbox.js";
 import { type MomHandler, type SlackBot, SlackBot as SlackBotClass, type SlackEvent } from "./slack.js";
@@ -15,11 +16,17 @@ import { ChannelStore } from "./store.js";
 
 const MOM_SLACK_APP_TOKEN = process.env.MOM_SLACK_APP_TOKEN;
 const MOM_SLACK_BOT_TOKEN = process.env.MOM_SLACK_BOT_TOKEN;
+const MOM_GOOD_MORNING_CHANNEL = process.env.MOM_GOOD_MORNING_CHANNEL;
+const MOM_GOOD_MORNING_TIME = process.env.MOM_GOOD_MORNING_TIME;
+const MOM_GOOD_MORNING_TEXT = process.env.MOM_GOOD_MORNING_TEXT;
 
 interface ParsedArgs {
 	workingDir?: string;
 	sandbox: SandboxConfig;
 	downloadChannel?: string;
+	goodMorningChannel?: string;
+	goodMorningTime?: string;
+	goodMorningText?: string;
 }
 
 function parseArgs(): ParsedArgs {
@@ -27,6 +34,9 @@ function parseArgs(): ParsedArgs {
 	let sandbox: SandboxConfig = { type: "host" };
 	let workingDir: string | undefined;
 	let downloadChannelId: string | undefined;
+	let goodMorningChannelId: string | undefined;
+	let goodMorningTime: string | undefined;
+	let goodMorningText: string | undefined;
 
 	for (let i = 0; i < args.length; i++) {
 		const arg = args[i];
@@ -38,6 +48,18 @@ function parseArgs(): ParsedArgs {
 			downloadChannelId = arg.slice("--download=".length);
 		} else if (arg === "--download") {
 			downloadChannelId = args[++i];
+		} else if (arg.startsWith("--good-morning-channel=")) {
+			goodMorningChannelId = arg.slice("--good-morning-channel=".length);
+		} else if (arg === "--good-morning-channel") {
+			goodMorningChannelId = args[++i];
+		} else if (arg.startsWith("--good-morning-time=")) {
+			goodMorningTime = arg.slice("--good-morning-time=".length);
+		} else if (arg === "--good-morning-time") {
+			goodMorningTime = args[++i];
+		} else if (arg.startsWith("--good-morning-text=")) {
+			goodMorningText = arg.slice("--good-morning-text=".length);
+		} else if (arg === "--good-morning-text") {
+			goodMorningText = args[++i];
 		} else if (!arg.startsWith("-")) {
 			workingDir = arg;
 		}
@@ -47,6 +69,9 @@ function parseArgs(): ParsedArgs {
 		workingDir: workingDir ? resolve(workingDir) : undefined,
 		sandbox,
 		downloadChannel: downloadChannelId,
+		goodMorningChannel: goodMorningChannelId || MOM_GOOD_MORNING_CHANNEL,
+		goodMorningTime: goodMorningTime || MOM_GOOD_MORNING_TIME,
+		goodMorningText: goodMorningText || MOM_GOOD_MORNING_TEXT,
 	};
 }
 
@@ -64,7 +89,7 @@ if (parsedArgs.downloadChannel) {
 
 // Normal bot mode - require working dir
 if (!parsedArgs.workingDir) {
-	console.error("Usage: mom [--sandbox=host|docker:<name>] <working-directory>");
+	console.error("Usage: mom [--sandbox=host|docker:<name>] [--good-morning-channel <channel-id>] <working-directory>");
 	console.error("       mom --download <channel-id>");
 	process.exit(1);
 }
@@ -77,6 +102,12 @@ if (!MOM_SLACK_APP_TOKEN || !MOM_SLACK_BOT_TOKEN) {
 }
 
 await validateSandbox(sandbox);
+
+const goodMorningConfig = resolveGoodMorningConfig(workingDir, {
+	channelId: parsedArgs.goodMorningChannel,
+	time: parsedArgs.goodMorningTime,
+	text: parsedArgs.goodMorningText,
+});
 
 // ============================================================================
 // State (per channel)
@@ -347,21 +378,24 @@ const bot = new SlackBotClass(handler, {
 	store: sharedStore,
 });
 
-// Start events watcher
 const eventsWatcher = createEventsWatcher(workingDir, bot);
-eventsWatcher.start();
+const goodMorningScheduler = goodMorningConfig ? createGoodMorningScheduler(goodMorningConfig, bot) : null;
 
 // Handle shutdown
 process.on("SIGINT", () => {
 	log.logInfo("Shutting down...");
 	eventsWatcher.stop();
+	goodMorningScheduler?.stop();
 	process.exit(0);
 });
 
 process.on("SIGTERM", () => {
 	log.logInfo("Shutting down...");
 	eventsWatcher.stop();
+	goodMorningScheduler?.stop();
 	process.exit(0);
 });
 
-bot.start();
+await bot.start();
+eventsWatcher.start();
+goodMorningScheduler?.start();

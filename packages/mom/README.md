@@ -85,8 +85,11 @@ mom --sandbox=docker:mom-sandbox ./data
 mom [options] <working-directory>
 
 Options:
-  --sandbox=host              Run tools on host (not recommended)
-  --sandbox=docker:<name>     Run tools in Docker container (recommended)
+  --sandbox=host                         Run tools on host (not recommended)
+  --sandbox=docker:<name>                Run tools in Docker container (recommended)
+  --good-morning-channel=<channel-id>    Post a daily good morning message to this Slack channel or DM
+  --good-morning-time=<HH:MM>            Local 24-hour time for the daily message (default: 08:00)
+  --good-morning-text=<text>             Message text to post (default: Good morning)
 ```
 
 ## Environment Variables
@@ -96,6 +99,9 @@ Options:
 | `MOM_SLACK_APP_TOKEN` | Slack app-level token (xapp-...) |
 | `MOM_SLACK_BOT_TOKEN` | Slack bot token (xoxb-...) |
 | `ANTHROPIC_API_KEY` | (Optional) Anthropic API key |
+| `MOM_GOOD_MORNING_CHANNEL` | (Optional) Slack channel or DM ID for the built-in daily good morning message |
+| `MOM_GOOD_MORNING_TIME` | (Optional) Local 24-hour time for the daily message, default `08:00` |
+| `MOM_GOOD_MORNING_TEXT` | (Optional) Message text for the daily greeting, default `Good morning` |
 
 ## Authentication
 
@@ -113,6 +119,21 @@ export ANTHROPIC_API_KEY=sk-ant-...
   - choose "Anthropic" provider
   - follow instructions in the browser
 - link `auth.json` to mom: `ln -s ~/.pi/agent/auth.json ~/.pi/mom/auth.json`
+
+## Daily Good Morning Hello World
+
+For a minimal scheduled hello-world workflow, configure a channel and mom will post `Good morning` there every day at 8:00 AM in the host's local timezone.
+
+```bash
+export MOM_GOOD_MORNING_CHANNEL=C123ABC
+# Optional overrides
+export MOM_GOOD_MORNING_TIME=08:00
+export MOM_GOOD_MORNING_TEXT="Good morning"
+
+mom --sandbox=docker:mom-sandbox ./data
+```
+
+This scheduler posts directly to Slack, uses the host's local timezone, and stores the last sent date in the workspace so a restart around 8:00 AM does not send a duplicate message the same day.
 
 ## How Mom Works
 

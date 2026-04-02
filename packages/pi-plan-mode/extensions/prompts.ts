@@ -18,13 +18,17 @@ You are in plan mode. You MUST NOT make any edits except to the plan file.
 ## Plan File
 ${planExists ? `A plan file exists at ${planFilePath}. Read it and update it using the write tool.` : `No plan file yet. Create your plan at ${planFilePath} using the write tool.`}
 
-## CRITICAL: The plan file is the source of truth
-When execution starts, the agent will be given ONLY the plan file in a fresh context — no chat history, no memory of this conversation.
+## CRITICAL: Exploration belongs in planning, not execution
+When execution starts, the agent receives ONLY the plan file in a fresh context — no chat history.
 
-Requirements:
-- The file must contain every fact the executing agent needs: exact file paths, function names, what to change, why, and how to verify. No "as discussed" references.
-- Your final step MUST be to write the completed plan to the file using the write tool.
-- You may reason and draft in chat — that is fine — but the file must be written before you signal readiness.`;
+This means all codebase research must happen NOW, during planning:
+- Read the relevant source files. Find the exact integration points.
+- Identify existing dependencies, utilities, and patterns to reuse.
+- Record what you found — file paths, function names, class names — directly in the plan.
+
+A good plan makes execution mechanical: the executing agent should be able to implement without reading a single file it wasn't told about.
+
+Your final step MUST be to write the completed plan to the file using the write tool.`;
 
 	if (variant === "long") {
 		return `${restrictions}
@@ -56,21 +60,20 @@ Do NOT implement anything. Describe what you would do.`;
 	return `${restrictions}
 
 ## Workflow
-1. **Explore** - Use read, bash, grep, find, ls to understand the codebase. Identify existing patterns, utilities, and load-bearing files before proposing changes.
-2. **Design** - Form a recommended approach. Distinguish facts (what you found) from proposals (what you recommend).
-3. **Write** - Write the plan to the plan file. Update it incrementally as understanding grows. Prefer reversible approaches with small checkpoints.
-4. **Converge** - When the plan covers what/where/how/verify, signal readiness.
+1. **Explore** - Read the relevant source files. Find the exact files, functions, and dependencies involved. Do not guess — look.
+2. **Design** - Choose the approach. Decide what to create, what to modify, what to reuse.
+3. **Write the plan** - Record everything the executing agent will need: exact file paths, function/class names, which existing utilities to reuse and where they live, and the verification command. No vague references — if the executing agent would need to read a file to discover something, put it in the plan.
+4. **Converge** - Write the final plan to the file using the write tool.
 
 ## Plan File Format
 - **Context**: Why this change is being made (1-2 sentences)
-- **Approach**: Recommended implementation only, not all alternatives
-- **Files to Modify**: Paths with one-line change descriptions
-- **Reuse**: Existing functions/utilities with file paths
-- **Verification**: Concrete command(s) to confirm correctness
+- **Approach**: What to build and how (specific, not conceptual)
+- **Files to Modify**: Full paths — CREATE or MODIFY, one-line description each
+- **Reuse**: Exact function/class names with file paths — copy the pattern from X, use Y from Z
+- **Verification**: Exact command(s) to run from the correct directory
 
-Keep the plan concise and scannable. Most good plans are under 40 lines. Avoid prose padding.
-
-Do NOT implement anything. Describe what you would do.`;
+A good plan is a recipe, not a roadmap. The executing agent should implement without exploring.
+Keep it under 40 lines. Do NOT implement anything.`;
 }
 
 export function getExecutionPrompt(todoItems: TodoItem[]): string {

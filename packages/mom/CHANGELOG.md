@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added an optional built-in daily good morning scheduler with configurable channel, time, and message text
+
 ## [0.64.0] - 2026-03-29
 
 ## [0.63.2] - 2026-03-29

@@ -7,7 +7,7 @@
  * - /plan [name] to enter plan mode, /plan long [name] for interview variant
  * - /plan execute, /plan exit, /plan status subcommands
  * - Ctrl+Alt+P shortcut to toggle
- * - Write tool guarded to plan file only, edit blocked entirely
+ * - Write and edit tools guarded to plan file only
  * - Bash restricted to safe read-only commands
  * - Todo extraction from plan file + [DONE:n] progress tracking
  * - Interactive review prompt (Execute / Refine / Stay)
@@ -17,6 +17,7 @@
 import type { AgentMessage } from "@mariozechner/pi-agent-core";
 import type { AssistantMessage, TextContent } from "@mariozechner/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { resolveToCwd } from "@mariozechner/pi-coding-agent";
 import { Key } from "@mariozechner/pi-tui";
 
 import { extractTodoItems, isSafeCommand, markCompletedSteps } from "./guards.js";
@@ -31,7 +32,7 @@ import {
 	type PlanVariant,
 } from "./state.js";
 
-const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "write"];
+const PLAN_MODE_TOOLS = ["read", "bash", "grep", "find", "ls", "write", "edit"];
 const NORMAL_MODE_TOOLS = ["read", "bash", "edit", "write"];
 
 function isAssistantMessage(m: AgentMessage): m is AssistantMessage {
@@ -221,23 +222,24 @@ export default function planModeExtension(pi: ExtensionAPI): void {
 
 	// -- Event Handlers --
 
-	// Block destructive bash + block edit + guard write to plan file only
-	pi.on("tool_call", async (event) => {
+	// Block destructive bash + guard write/edit to plan file only
+	pi.on("tool_call", async (event, ctx) => {
 		if (state.phase !== "planning" && state.phase !== "review") return;
 
-		if (event.toolName === "edit") {
-			return {
-				block: true,
-				reason: "Plan mode: edit is disabled. You can only write to the plan file using the write tool.",
-			};
-		}
-
-		if (event.toolName === "write") {
-			const filePath = event.input.file_path as string | undefined;
-			if (filePath !== state.planFilePath) {
+		if (event.toolName === "write" || event.toolName === "edit") {
+			const rawPath = event.input.path as string | undefined;
+			if (!rawPath || !state.planFilePath) {
 				return {
 					block: true,
-					reason: `Plan mode: write is restricted to the plan file only.\nAllowed: ${state.planFilePath}\nAttempted: ${filePath}`,
+					reason: `Plan mode: ${event.toolName} is restricted to the plan file only.\nAllowed: ${state.planFilePath}\nAttempted: ${rawPath ?? "(no path)"}`,
+				};
+			}
+			// Resolve ~ and relative paths before comparing
+			const resolved = resolveToCwd(rawPath, ctx.cwd);
+			if (resolved !== state.planFilePath) {
+				return {
+					block: true,
+					reason: `Plan mode: ${event.toolName} is restricted to the plan file only.\nAllowed: ${state.planFilePath}\nAttempted: ${resolved}`,
 				};
 			}
 			return;

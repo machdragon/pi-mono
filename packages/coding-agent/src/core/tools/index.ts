@@ -22,6 +22,7 @@ export {
 	editToolDefinition,
 } from "./edit.js";
 export { withFileMutationQueue } from "./file-mutation-queue.js";
+export { expandPath, resolveToCwd } from "./path-utils.js";
 export {
 	createFindTool,
 	createFindToolDefinition,

@@ -10,10 +10,10 @@ export function getPlanningPrompt(variant: PlanVariant, planFilePath: string, pl
 You are in plan mode. You MUST NOT make any edits except to the plan file.
 
 ## Restrictions
-- Tools available: read, bash (read-only allowlist), grep, find, ls, write (plan file only)
-- You CANNOT use: edit (file modifications are disabled)
+- Tools available: read, bash (read-only allowlist), grep, find, ls, write, edit
+- Write and edit are restricted to the plan file ONLY: ${planFilePath}
 - Bash is restricted to safe read-only commands (no rm, mv, git commit, npm install, etc.)
-- The ONLY file you may write to is: ${planFilePath}
+- Use the ABSOLUTE path when writing/editing the plan file
 
 ## Plan File
 ${planExists ? `A plan file exists at ${planFilePath}. Read it and update incrementally.` : `No plan file yet. Create your plan at ${planFilePath}.`}`;

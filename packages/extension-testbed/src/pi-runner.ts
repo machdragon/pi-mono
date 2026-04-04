@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /** Absolute path to the otel-bridge extension in this package */
-export const OTEL_BRIDGE_PATH = resolve(__dirname, "otel-bridge.js");
+export const OTEL_BRIDGE_PATH = resolve(__dirname, "../src/otel-bridge.ts");
 
 export interface PiRunOptions {
 	prompt: string;
@@ -45,8 +45,11 @@ export async function runPi(options: PiRunOptions): Promise<PiRunResult> {
 		piBinaryPath = "pi",
 	} = options;
 
-	// Build args: --mode json <prompt> [--model <model>] [--extension <path>] ...
-	const args: string[] = ["--mode", "json", prompt];
+	// Build args: --mode json --no-extensions <prompt> [--model <model>] [--extension <path>] ...
+	// --no-extensions prevents auto-discovery of user/project extensions so only the
+	// explicitly passed otel-bridge + extension-under-test are loaded (avoids double-loading
+	// otel-bridge when the testbed package is also installed as a user extension).
+	const args: string[] = ["--mode", "json", "--no-extensions", prompt];
 	if (model) {
 		args.push("--model", model);
 	}

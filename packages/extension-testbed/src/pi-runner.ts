@@ -49,7 +49,7 @@ export async function runPi(options: PiRunOptions): Promise<PiRunResult> {
 	// --no-extensions prevents auto-discovery of user/project extensions so only the
 	// explicitly passed otel-bridge + extension-under-test are loaded (avoids double-loading
 	// otel-bridge when the testbed package is also installed as a user extension).
-	const args: string[] = ["--mode", "json", "--no-extensions", prompt];
+	const args: string[] = ["--print", "--mode", "json", "--no-extensions", prompt];
 	if (model) {
 		args.push("--model", model);
 	}
@@ -75,6 +75,7 @@ export async function runPi(options: PiRunOptions): Promise<PiRunResult> {
 		cwd,
 		env: { ...process.env, ...env },
 		signal: controller.signal,
+		stdio: ["ignore", "pipe", "pipe"],
 	});
 
 	// Read JSON event lines from stdout

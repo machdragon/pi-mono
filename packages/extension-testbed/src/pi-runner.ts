@@ -60,6 +60,7 @@ export async function runPi(options: PiRunOptions): Promise<PiRunResult> {
 	let stderr = "";
 	let timedOut = false;
 	let exitCode: number | null = null;
+	let spawnError: Error | null = null;
 
 	const controller = new AbortController();
 	const timer = setTimeout(() => {
@@ -95,11 +96,18 @@ export async function runPi(options: PiRunOptions): Promise<PiRunResult> {
 			clearTimeout(timer);
 			resolve();
 		});
-		child.on("error", () => {
+		child.on("error", (err) => {
+			spawnError = err;
 			clearTimeout(timer);
 			resolve();
 		});
 	});
+
+	// Surface spawn errors (e.g. ENOENT for missing binary), but not the
+	// expected ABORT_ERR that fires when we cancel due to timeout.
+	if (spawnError && !timedOut) {
+		throw spawnError;
+	}
 
 	// If we aborted due to timeout, try SIGKILL after 2s
 	if (timedOut) {

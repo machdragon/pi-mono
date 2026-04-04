@@ -17,6 +17,7 @@ export function loadConfig(): TestbedConfig {
 		aspireApiKey: process.env.ASPIRE_API_KEY,
 		otlpEndpoint: process.env.OTLP_ENDPOINT ?? "http://localhost:18890",
 		piBinaryPath: process.env.PI_BINARY_PATH ?? "pi",
-		piTimeoutMs: Number(process.env.PI_TIMEOUT_MS ?? "120000"),
+		piTimeoutMs: Number.isFinite(Number(process.env.PI_TIMEOUT_MS)) ? Number(process.env.PI_TIMEOUT_MS) : 120000,
+
 	};
 }

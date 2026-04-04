@@ -1,0 +1,35 @@
+{
+	"name": "@pi-mono/extension-testbed",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "MCP server for testing pi coding agent extensions with Aspire OpenTelemetry",
+	"bin": {
+		"pi-testbed-mcp": "dist/start-mcp.js"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"scripts": {
+		"clean": "shx rm -rf dist",
+		"build": "tsgo -p tsconfig.build.json",
+		"dev": "tsgo -p tsconfig.build.json --watch --preserveWatchOutput",
+		"check": "echo 'nothing to check'"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.12.0",
+		"@opentelemetry/api": "^1.9.0",
+		"@opentelemetry/exporter-trace-otlp-http": "0.200.0",
+		"@opentelemetry/resources": "2.0.0",
+		"@opentelemetry/sdk-trace-base": "2.0.0",
+		"@opentelemetry/sdk-trace-node": "2.0.0",
+		"@opentelemetry/semantic-conventions": "^1.29.0",
+		"zod": "^3.24.0"
+	},
+	"devDependencies": {
+		"@types/node": "^24.3.0",
+		"shx": "^0.4.0"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

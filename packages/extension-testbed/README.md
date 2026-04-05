@@ -38,7 +38,7 @@ Paginated slices of the pi JSON event stream for a `run_id`. Includes `telemetry
 
 ### `aspire_get_telemetry`
 
-Query `resources` | `spans` | `traces` | `logs`. Use **`response_shape=summary`** for list endpoints to avoid huge payloads.
+Query `resources` | `spans` | `traces` | `logs`. Use **`response_shape=summary`** for list endpoints to avoid huge payloads. Summaries include **`count_semantics`**: Aspire’s **spans** list counts spans; **traces** list counts traces (each response still uses OTLP `data.resourceSpans` with span rows). If counts are non-zero but **`trace_ids`** is empty, check **`parse_warning`** for an OTLP shape mismatch.
 
 ### `aspire_get_trace`
 

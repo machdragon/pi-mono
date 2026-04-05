@@ -162,7 +162,7 @@ export function createMcpServer(config: TestbedConfig): McpServer {
 							shape === "summary"
 								? {
 										shape: "summary",
-										...summarizeTelemetryListResponse(raw),
+										...summarizeTelemetryListResponse(raw, { listEndpoint: "spans" }),
 										aspire_endpoint: config.aspireEndpoint,
 									}
 								: raw;
@@ -191,7 +191,7 @@ export function createMcpServer(config: TestbedConfig): McpServer {
 							shape === "summary"
 								? {
 										shape: "summary",
-										...summarizeTelemetryListResponse(raw),
+										...summarizeTelemetryListResponse(raw, { listEndpoint: "traces" }),
 										aspire_endpoint: config.aspireEndpoint,
 									}
 								: raw;
@@ -366,14 +366,20 @@ Use telemetry_level=full only when you need raw OTLP in the tool result.`,
 						const spansV = spans.status === "fulfilled" ? spans.value : null;
 						const logsV = logs.status === "fulfilled" ? logs.value : null;
 						const tracesV = traces.status === "fulfilled" ? traces.value : null;
-						result.telemetry_summary = buildPiRunTelemetrySummary(
+						const telemetrySummary = buildPiRunTelemetrySummary(
 							config.aspireEndpoint,
 							serviceName,
 							spansV,
 							tracesV,
 							logsV,
 						);
-						const traceIds = spansV ? summarizeTelemetryListResponse(spansV).trace_ids : [];
+						result.telemetry_summary = telemetrySummary;
+						const traceIds = [
+							...new Set([
+								...(telemetrySummary.spans?.trace_ids ?? []),
+								...(telemetrySummary.traces_list?.trace_ids ?? []),
+							]),
+						];
 						runTelemetryIndex.set(runId, { service_name: serviceName, trace_ids: traceIds });
 					} else {
 						const [spans, logs, traces] = await Promise.allSettled([
@@ -388,7 +394,9 @@ Use telemetry_level=full only when you need raw OTLP in the tool result.`,
 							aspire_url: config.aspireEndpoint,
 						};
 						const spansV = spans.status === "fulfilled" ? spans.value : null;
-						const traceIds = spansV ? summarizeTelemetryListResponse(spansV).trace_ids : [];
+						const traceIds = spansV
+							? summarizeTelemetryListResponse(spansV, { listEndpoint: "spans" }).trace_ids
+							: [];
 						runTelemetryIndex.set(runId, { service_name: serviceName, trace_ids: traceIds });
 					}
 				} else {

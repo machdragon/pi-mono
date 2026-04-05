@@ -141,26 +141,66 @@ export function rootSpanNames(spans: FlatSpan[]): string[] {
 	return names;
 }
 
+export type TelemetryListEndpoint = "spans" | "traces";
+
 export interface TelemetryListSummary {
 	totalCount: number;
 	returnedCount: number;
+	/** Aspire: spans list counts spans; traces list counts traces (not spans). */
+	count_semantics: "aspire_spans" | "aspire_traces";
 	trace_ids: string[];
 	root_span_names: string[];
 	span_name_samples: string[];
+	/** Set when API reports rows but OTLP could not be parsed (unexpected shape or empty spans). */
+	parse_warning?: string;
+}
+
+function describeOtlpDataShape(data: unknown): "resourceSpans" | "nullish" | "no_resourceSpans" {
+	if (data === null || data === undefined) return "nullish";
+	if (typeof data !== "object") return "no_resourceSpans";
+	const rs = (data as { resourceSpans?: unknown }).resourceSpans;
+	return Array.isArray(rs) ? "resourceSpans" : "no_resourceSpans";
+}
+
+export interface SummarizeTelemetryListOptions {
+	/** Which Aspire list endpoint produced `resp` (affects count_semantics and warnings). */
+	listEndpoint: TelemetryListEndpoint;
 }
 
 /** Summarize a spans or traces list response without returning full OTLP `data`. */
-export function summarizeTelemetryListResponse(resp: TelemetryApiResponse): TelemetryListSummary {
+export function summarizeTelemetryListResponse(
+	resp: TelemetryApiResponse,
+	opts: SummarizeTelemetryListOptions,
+): TelemetryListSummary {
 	const spans = flattenSpansFromTelemetryData(resp.data);
 	const trace_ids = uniqueTraceIds(spans);
 	const root_span_names = rootSpanNames(spans);
 	const span_name_samples = [...new Set(spans.map((s) => s.name).filter(Boolean))].slice(0, 15);
+	const shape = describeOtlpDataShape(resp.data);
+	const count_semantics = opts.listEndpoint === "traces" ? "aspire_traces" : "aspire_spans";
+
+	let parse_warning: string | undefined;
+	const countsNonZero = resp.totalCount > 0 || resp.returnedCount > 0;
+	if (spans.length === 0 && countsNonZero) {
+		const path = `/api/telemetry/${opts.listEndpoint}`;
+		if (shape === "nullish") {
+			parse_warning = `${path} returned totalCount/returnedCount > 0 but data is null; cannot extract trace_ids.`;
+		} else if (shape === "no_resourceSpans") {
+			parse_warning = `Expected OTLP JSON with data.resourceSpans (Aspire ${path} normally uses ConvertSpansToOtlpJson). Got a different shape; trace_ids and span samples are empty.`;
+		} else {
+			parse_warning =
+				"data.resourceSpans is present but no spans were parsed; OTLP JSON may use fields this client does not read, or scopes are empty.";
+		}
+	}
+
 	return {
 		totalCount: resp.totalCount,
 		returnedCount: resp.returnedCount,
+		count_semantics,
 		trace_ids,
 		root_span_names,
 		span_name_samples,
+		...(parse_warning ? { parse_warning } : {}),
 	};
 }
 
@@ -169,7 +209,8 @@ export interface PiRunTelemetrySummary {
 	service_name: string;
 	hint: string;
 	spans: TelemetryListSummary | null;
-	traces_list: { totalCount: number; returnedCount: number } | null;
+	/** Same summary shape as spans; count_semantics is aspire_traces. */
+	traces_list: TelemetryListSummary | null;
 	logs: { totalCount: number; returnedCount: number; trace_ids_in_sample: string[] } | null;
 }
 
@@ -202,8 +243,8 @@ export function buildPiRunTelemetrySummary(
 		aspire_endpoint: aspireEndpoint,
 		service_name: serviceName,
 		hint: `Full OTLP is in the Aspire dashboard (${aspireEndpoint}). Use aspire_get_trace(trace_id, ...) or aspire_get_telemetry with response_shape for more detail.`,
-		spans: spans ? summarizeTelemetryListResponse(spans) : null,
-		traces_list: traces ? { totalCount: traces.totalCount, returnedCount: traces.returnedCount } : null,
+		spans: spans ? summarizeTelemetryListResponse(spans, { listEndpoint: "spans" }) : null,
+		traces_list: traces ? summarizeTelemetryListResponse(traces, { listEndpoint: "traces" }) : null,
 		logs: logs
 			? {
 					totalCount: logs.totalCount,

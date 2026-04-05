@@ -101,7 +101,7 @@ export default function otelBridge(pi: ExtensionAPI): void {
 		const span = turnSpans.get(turnIndex);
 		if (span) {
 			// Token usage + model info from the assistant message
-			const msg = message as Record<string, unknown> ?? {};
+			const msg = (message as Record<string, unknown>) ?? {};
 			if (msg.role === "assistant") {
 				const usage = msg.usage as Record<string, number> | undefined;
 				if (usage) {

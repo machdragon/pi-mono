@@ -4,6 +4,10 @@
 	"private": true,
 	"type": "module",
 	"description": "MCP server for testing pi coding agent extensions with Aspire OpenTelemetry",
+	"keywords": ["pi-package"],
+	"pi": {
+		"skills": ["./skills"]
+	},
 	"bin": {
 		"pi-testbed-mcp": "dist/start-mcp.js"
 	},

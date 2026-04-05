@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
+import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
-import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -35,15 +35,7 @@ export interface PiRunResult {
 }
 
 export async function runPi(options: PiRunOptions): Promise<PiRunResult> {
-	const {
-		prompt,
-		extensions,
-		env,
-		cwd,
-		timeoutMs = 120000,
-		model,
-		piBinaryPath = "pi",
-	} = options;
+	const { prompt, extensions, env, cwd, timeoutMs = 120000, model, piBinaryPath = "pi" } = options;
 
 	// Build args: --mode json --no-extensions <prompt> [--model <model>] [--extension <path>] ...
 	// --no-extensions prevents auto-discovery of user/project extensions so only the
